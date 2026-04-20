@@ -1,75 +1,47 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-
-from app.schemas.product import ProductCreate, ProductResponse
-from app.models.product import Product as ProductModel
+from app.models.product import Product
+from app.schemas.product import ProductCreate
 from app.dependencies import get_db
-from app.auth.utils import get_current_user
+from app.core.redis import redis_client
+import json
 
 router = APIRouter()
 
 
-# CREATE PRODUCT
-@router.post("/products", response_model=ProductResponse)
+@router.post("/products")
 def create_product(product: ProductCreate, db: Session = Depends(get_db)):
-    new_product = ProductModel(
+    new_product = Product(
         name=product.name,
         price=product.price
     )
-
     db.add(new_product)
     db.commit()
     db.refresh(new_product)
 
+    # ❗ invalidate cache
+    redis_client.delete("products")
+
     return new_product
 
 
-# GET ALL PRODUCTS (PROTECTED)
-@router.get("/products", response_model=list[ProductResponse])
-def get_products(
-    db: Session = Depends(get_db),
-    user: str = Depends(get_current_user)
-):
-    return db.query(ProductModel).all()
+@router.get("/products")
+def get_products(db: Session = Depends(get_db)):
+    # 🔥 CHECK CACHE
+    cached_products = redis_client.get("products")
 
+    if cached_products:
+        return json.loads(cached_products)
 
-# GET PRODUCT BY ID
-@router.get("/products/{product_id}", response_model=ProductResponse)
-def get_product(product_id: int, db: Session = Depends(get_db)):
-    product = db.query(ProductModel).filter(ProductModel.id == product_id).first()
+    # ❌ CACHE MISS → DB HIT
+    products = db.query(Product).all()
 
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+    data = [
+        {"id": p.id, "name": p.name, "price": p.price}
+        for p in products
+    ]
 
-    return product
+    # 🔥 STORE IN REDIS (TTL 60 sec)
+    redis_client.setex("products", 60, json.dumps(data))
 
-
-# UPDATE PRODUCT
-@router.put("/products/{product_id}", response_model=ProductResponse)
-def update_product(product_id: int, updated_product: ProductCreate, db: Session = Depends(get_db)):
-    product = db.query(ProductModel).filter(ProductModel.id == product_id).first()
-
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-
-    product.name = updated_product.name
-    product.price = updated_product.price
-
-    db.commit()
-    db.refresh(product)
-
-    return product
-
-
-# DELETE PRODUCT
-@router.delete("/products/{product_id}")
-def delete_product(product_id: int, db: Session = Depends(get_db)):
-    product = db.query(ProductModel).filter(ProductModel.id == product_id).first()
-
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-
-    db.delete(product)
-    db.commit()
-
-    return {"message": "Product deleted successfully"}
+    return data

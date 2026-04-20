@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.tasks.order_tasks import process_order
 from app.models.order import Order
 from app.models.order_item import OrderItem
 from app.models.cart import Cart
@@ -13,7 +14,7 @@ from app.auth.utils import get_current_user
 router = APIRouter()
 
 
-# 🧾 CREATE ORDER (CHECKOUT)
+# 🧾 CREATE ORDER (ASYNC)
 @router.post("/orders", response_model=OrderResponse)
 def create_order(
     db: Session = Depends(get_db),
@@ -31,14 +32,13 @@ def create_order(
 
     total_price = 0
 
-    # Calculate total
+    # calculate total
     for item in cart_items:
         product = db.query(Product).filter(Product.id == item.product_id).first()
-        if not product:
-            continue
-        total_price += product.price
+        if product:
+            total_price += product.price
 
-    # Create order
+    # create order
     new_order = Order(
         user_id=db_user.id,
         total_price=total_price
@@ -48,7 +48,7 @@ def create_order(
     db.commit()
     db.refresh(new_order)
 
-    # Create order items
+    # create order items
     for item in cart_items:
         order_item = OrderItem(
             order_id=new_order.id,
@@ -56,22 +56,25 @@ def create_order(
         )
         db.add(order_item)
 
-    # Clear cart
+    # clear cart
     for item in cart_items:
         db.delete(item)
 
     db.commit()
 
+    # 🔥 SEND TASK TO CELERY (ASYNC)
+    process_order.delay(new_order.id)
+
     return new_order
 
 
-# 📦 GET USER ORDERS
+# 📦 GET ORDERS
 @router.get("/orders")
 def get_orders(
     db: Session = Depends(get_db),
-    user: str = Depends(get_current_user)
+    user: dict = Depends(get_current_user)
 ):
-    email = user
+    email = user.get("sub")
 
     db_user = db.query(User).filter(User.email == email).first()
 
@@ -87,11 +90,12 @@ def get_orders(
         for item in order_items:
             product = db.query(Product).filter(Product.id == item.product_id).first()
 
-            items.append({
-                "product_id": product.id,
-                "name": product.name,
-                "price": product.price
-            })
+            if product:
+                items.append({
+                    "product_id": product.id,
+                    "name": product.name,
+                    "price": product.price
+                })
 
         result.append({
             "id": order.id,
