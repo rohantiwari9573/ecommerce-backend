@@ -1,120 +1,192 @@
-# 🛒 E-Commerce Backend (FastAPI + PostgreSQL + Redis + Celery + Docker)
+# 🛒 Scalable E-Commerce Backend System
 
-A production-ready e-commerce backend built with a scalable architecture, asynchronous processing, and performance optimizations.
+A production-style e-commerce backend built using FastAPI with asynchronous processing, Redis-powered optimizations, Dockerized services, and CI/CD integration.
 
 ---
 
-## 🚀 Tech Stack
+# 🚀 Live Deployment
+
+API Docs:
+
+https://ecommerce-backend-spj8.onrender.com/docs
+
+---
+
+# 🚀 Tech Stack
 
 * **FastAPI** — High-performance async API framework
-* **PostgreSQL** — Relational database for structured data
-* **Redis** — Caching + rate limiting + message broker
-* **Celery** — Asynchronous task queue for background jobs
-* **Docker & Docker Compose** — Containerized deployment
+* **PostgreSQL / SQLite** — Relational database management
+* **SQLAlchemy** — ORM for database abstraction
+* **Redis** — Caching, rate limiting, and Celery broker
+* **Celery** — Asynchronous task processing
+* **Docker & Docker Compose** — Multi-container architecture
+* **GitHub Actions** — Continuous Integration (CI)
+* **Render** — Cloud deployment platform
 
 ---
 
-## ✨ Core Features
+# ✨ Core Features
 
-* 🔐 JWT Authentication (signup/login, protected routes)
-* 📦 Product Management (CRUD APIs)
-* 🛒 Cart System (add/update/remove items)
-* 📑 Order Processing (create orders from cart)
-* ⚡ Redis Caching (product endpoints)
-* 🚦 Rate Limiting (Redis-based)
-* 🔄 Async Order Handling (Celery workers)
-* 📜 Request & Response Logging
-* ⚙️ Environment-based Configuration (.env)
+* 🔐 JWT Authentication (signup/login + protected routes)
+* 📦 Product Management APIs
+* 🛒 Cart Management System
+* 📑 Order Creation Workflow
+* ⚡ Redis-based Product Caching
+* 🚦 API Rate Limiting using Redis
+* 🔄 Asynchronous Background Task Architecture using Celery
+* 📜 Automatic Swagger/OpenAPI Documentation
+* ⚙️ Environment-based Configuration using `.env`
+* 🐳 Dockerized Multi-Service Deployment
+* 🔁 CI Pipeline using GitHub Actions
 
 ---
 
-## 🧠 System Architecture
+# 🧠 System Architecture
 
-```
+```text
 Client
    ↓
 FastAPI (API Layer)
    ↓
-PostgreSQL (Persistent Storage)
+PostgreSQL / SQLite
    ↓
-Redis (Cache + Broker)
+Redis (Caching + Broker)
    ↓
-Celery Worker (Async Tasks)
+Celery Worker (Async Processing)
 ```
 
 ---
 
-## 🔄 Request Flow
+# 🔄 Request Flow
 
-### 1. Product Fetch
+## 1. Product Fetch Workflow
 
 * Client requests `/products`
 * FastAPI checks Redis cache
-* If cache miss → fetch from PostgreSQL → store in Redis → return response
+* On cache miss:
 
-### 2. Order Placement
-
-* User places order
-* Order stored in PostgreSQL
-* Task pushed to Redis queue
-* Celery worker processes background tasks
+  * fetches data from database
+  * stores response in Redis
+  * returns optimized response
 
 ---
 
-## ⚡ Why This Architecture?
+## 2. Order Placement Workflow
 
-* **FastAPI** → async support + high throughput
-* **PostgreSQL** → strong consistency for transactions
-* **Redis** → reduces DB load + enables rate limiting
-* **Celery** → offloads heavy tasks → improves API response time
-* **Docker** → ensures environment consistency
-
----
-
-## 📈 Scalability Considerations
-
-* Horizontal scaling via multiple FastAPI instances
-* Redis as centralized cache + broker
-* Background workers handle heavy operations asynchronously
-* DB load reduced using caching layer
+* User authenticates using JWT token
+* Items added to cart
+* Order created from cart items
+* Celery task can process background operations asynchronously
 
 ---
 
-## 🧪 Future Improvements
+# ⚡ Performance & Scalability Features
 
-* Payment integration (Stripe/Razorpay)
-* Inventory locking to prevent race conditions
-* Microservices architecture
-* CI/CD pipeline
-* Unit & integration testing
+* Redis caching reduces repeated database queries
+* Rate limiting protects APIs from abuse
+* Background task architecture improves responsiveness
+* Modular router-based architecture improves maintainability
+* Dockerized services ensure reproducible environments
+* CI pipeline automates validation during code pushes
 
 ---
 
-## 🛠️ Setup Instructions
+# 🚀 CI/CD Pipeline
 
-### 1. Clone Repository
+Implemented Continuous Integration using GitHub Actions.
+
+Pipeline automatically:
+
+* installs dependencies
+* validates Python syntax
+* builds Docker image
+* runs on every push to `main`
+
+---
+
+# ☁️ Deployment
+
+The backend is deployed on Render using environment-based configuration variables.
+
+Deployment includes:
+
+* FastAPI API server
+* Swagger documentation
+* Cloud-hosted REST endpoints
+
+---
+
+# 🛠️ Local Setup Instructions
+
+## 1. Clone Repository
 
 ```bash
-git clone <your-repo-url>
-cd E-Commerce
+git clone https://github.com/rohantiwari9573/ecommerce-backend.git
+cd ecommerce-backend
 ```
 
-### 2. Run with Docker
+---
+
+## 2. Configure Environment Variables
+
+Create `.env` file:
+
+```env
+SECRET_KEY=mysecretkey
+DATABASE_URL=postgresql://postgres:admin123@db:5432/ecommerce
+REDIS_URL=redis://redis:6379/0
+```
+
+---
+
+## 3. Run with Docker
 
 ```bash
 docker-compose up --build
 ```
 
-### 3. Access API Docs
+---
 
-```
+## 4. Access Swagger Docs
+
+```text
 http://localhost:8000/docs
 ```
 
 ---
 
-## 📌 Key Highlights
+# 📌 Key Engineering Concepts Covered
 
-* Designed with **scalability and performance in mind**
-* Implements **real-world backend patterns**
-* Uses **async + caching + background processing**
+* REST API Design
+* JWT Authentication
+* Database ORM Modeling
+* Redis Caching
+* Rate Limiting
+* Asynchronous Task Queues
+* Docker Containerization
+* Multi-Service Architecture
+* CI/CD Pipelines
+* Cloud Deployment
+
+---
+
+# 📈 Future Improvements
+
+* Payment Gateway Integration
+* Inventory Management
+* Role-Based Access Control (RBAC)
+* Automated Testing Suite
+* Kubernetes Deployment
+* Microservices Migration
+
+---
+
+# 👨‍💻 Author
+
+Rohan Tiwari
+
+GitHub:
+https://github.com/rohantiwari9573
+
+LinkedIn:
+https://www.linkedin.com/in/rohan-tiwari-012106283/
