@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.tasks.database import engine, Base
+from app.database import engine, Base
 
 # Import models
 from app.models import user, product, cart, order
