@@ -9,8 +9,8 @@ from app.models import user, product, cart, order
 from app.routers import user, product, cart, order
 
 # Create database tables
+Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
-
 app = FastAPI()
 
 # Include routers
