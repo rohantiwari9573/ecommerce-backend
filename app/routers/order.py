@@ -1,20 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.tasks.order_tasks import process_order
 from app.models.order import Order
 from app.models.order_item import OrderItem
 from app.models.cart import Cart
 from app.models.product import Product
 from app.models.user import User
+
 from app.schemas.order import OrderResponse
+
 from app.dependencies import get_db
 from app.auth.utils import get_current_user
 
 router = APIRouter()
 
 
-# 🧾 CREATE ORDER (ASYNC)
+# 🧾 CREATE ORDER
 @router.post("/orders", response_model=OrderResponse)
 def create_order(
     db: Session = Depends(get_db),
@@ -23,10 +24,12 @@ def create_order(
     email = user.get("sub")
 
     db_user = db.query(User).filter(User.email == email).first()
+
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
     cart_items = db.query(Cart).filter(Cart.user_id == db_user.id).all()
+
     if not cart_items:
         raise HTTPException(status_code=400, detail="Cart is empty")
 
@@ -35,6 +38,7 @@ def create_order(
     # calculate total
     for item in cart_items:
         product = db.query(Product).filter(Product.id == item.product_id).first()
+
         if product:
             total_price += product.price
 
@@ -54,6 +58,7 @@ def create_order(
             order_id=new_order.id,
             product_id=item.product_id
         )
+
         db.add(order_item)
 
     # clear cart
@@ -62,8 +67,8 @@ def create_order(
 
     db.commit()
 
-    # 🔥 SEND TASK TO CELERY (ASYNC)
-    process_order.delay(new_order.id)
+    # Celery disabled for Render deployment
+    # process_order.delay(new_order.id)
 
     return new_order
 
@@ -83,12 +88,16 @@ def get_orders(
     result = []
 
     for order in orders:
-        order_items = db.query(OrderItem).filter(OrderItem.order_id == order.id).all()
+        order_items = db.query(OrderItem).filter(
+            OrderItem.order_id == order.id
+        ).all()
 
         items = []
 
         for item in order_items:
-            product = db.query(Product).filter(Product.id == item.product_id).first()
+            product = db.query(Product).filter(
+                Product.id == item.product_id
+            ).first()
 
             if product:
                 items.append({
