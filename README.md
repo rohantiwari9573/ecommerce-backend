@@ -170,17 +170,6 @@ http://localhost:8000/docs
 
 ---
 
-# 📈 Future Improvements
-
-* Payment Gateway Integration
-* Inventory Management
-* Role-Based Access Control (RBAC)
-* Automated Testing Suite
-* Kubernetes Deployment
-* Microservices Migration
-
----
-
 # 👨‍💻 Author
 
 Rohan Tiwari
