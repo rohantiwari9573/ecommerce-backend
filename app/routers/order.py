@@ -11,11 +11,13 @@ from app.schemas.order import OrderResponse
 
 from app.dependencies import get_db
 from app.auth.utils import get_current_user
+from app.tasks.order_tasks import process_order
+from app.core.logger import logger
 
 router = APIRouter()
 
 
-# 🧾 CREATE ORDER
+# 🧾 CREATE ORDER (ASYNC)
 @router.post("/orders", response_model=OrderResponse)
 def create_order(
     db: Session = Depends(get_db),
@@ -67,8 +69,11 @@ def create_order(
 
     db.commit()
 
-    # Celery disabled for Render deployment
-    # process_order.delay(new_order.id)
+    try:
+        process_order.delay(new_order.id)
+    except Exception as exc:
+        # Broker unreachable — order still succeeds, background processing is skipped
+        logger.warning(f"Could not queue background order processing: {exc}")
 
     return new_order
 
