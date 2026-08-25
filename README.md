@@ -18,7 +18,7 @@ https://ecommerce-backend-spj8.onrender.com/docs
 * **PostgreSQL / SQLite** — Relational database management
 * **SQLAlchemy** — ORM for database abstraction
 * **Redis** — Caching, rate limiting, and Celery broker
-* **Celery** — Asynchronous task processing
+* **Celery** — Asynchronous task processing (fully async processing runs via Docker Compose locally)
 * **Docker & Docker Compose** — Multi-container architecture
 * **GitHub Actions** — Continuous Integration (CI)
 * **Render** — Cloud deployment platform
