@@ -41,3 +41,10 @@ app.include_router(order.router, dependencies=[Depends(rate_limiter)])
 @app.get("/")
 def root():
     return {"message": "E-Commerce Backend Running"}
+
+
+# Liveness probe for uptime pingers: registered on the app (not a router), so
+# the per-router rate limiter doesn't apply; no auth and no database access.
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
