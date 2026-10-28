@@ -1,181 +1,113 @@
-# 🛒 Scalable E-Commerce Backend System
+<div align="center">
 
-A production-style e-commerce backend built using FastAPI with asynchronous processing, Redis-powered optimizations, Dockerized services, and CI/CD integration.
+# 🛒 E-Commerce Backend
 
----
+**A REST API for an online store: products, carts and orders. It uses JWT auth, Redis-backed caching and rate limiting, and Celery background jobs.**
 
-# 🚀 Live Deployment
+[![CI](https://github.com/rohantiwari9573/ecommerce-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/rohantiwari9573/ecommerce-backend/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white)
+![Celery](https://img.shields.io/badge/Celery-37814A?style=flat-square&logo=celery&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker_Compose-2496ED?style=flat-square&logo=docker&logoColor=white)
 
-API Docs:
+**[Live API docs (Swagger)](https://ecommerce-backend-spj8.onrender.com/docs)** · **[Health check](https://ecommerce-backend-spj8.onrender.com/health)**
 
-https://ecommerce-backend-spj8.onrender.com/docs
+<sub>Hosted on a free tier, so the first request after an idle period can take up to a minute while the service wakes up.</sub>
 
----
-
-# 🚀 Tech Stack
-
-* **FastAPI** — High-performance async API framework
-* **PostgreSQL / SQLite** — Relational database management
-* **SQLAlchemy** — ORM for database abstraction
-* **Redis** — Caching, rate limiting, and Celery broker
-* **Celery** — Asynchronous task processing (fully async processing runs via Docker Compose locally)
-* **Docker & Docker Compose** — Multi-container architecture
-* **GitHub Actions** — Continuous Integration (CI)
-* **Render** — Cloud deployment platform
+</div>
 
 ---
 
-# ✨ Core Features
+## Features
 
-* 🔐 JWT Authentication (signup/login + protected routes)
-* 📦 Product Management APIs
-* 🛒 Cart Management System
-* 📑 Order Creation Workflow
-* ⚡ Redis-based Product Caching
-* 🚦 API Rate Limiting using Redis
-* 🔄 Asynchronous Background Task Architecture using Celery
-* 📜 Automatic Swagger/OpenAPI Documentation
-* ⚙️ Environment-based Configuration using `.env`
-* 🐳 Dockerized Multi-Service Deployment
-* 🔁 CI Pipeline using GitHub Actions
+- **JWT authentication.** Signup and login issue bearer tokens that expire after 60 minutes. Passwords are hashed with bcrypt and must be at least 8 characters.
+- **Product catalog.** `GET /products` is served from a Redis cache with a 60-second TTL, and the cache is invalidated as soon as a product is created, so reads never go stale.
+- **Rate limiting.** A per-IP fixed window (10 requests per 60 seconds) is stored in Redis and returns `429` when exceeded. It fails open if Redis is unreachable, so a cache outage never takes the API down.
+- **Carts and orders.** Users manage their own cart, and checking out turns cart items into an order with line items.
+- **Background jobs.** Placing an order enqueues a `process_order` Celery task, using Redis as the broker. The task body is currently a placeholder for fulfilment work such as invoicing or notifications.
+- **Operations.** The app logs every request, exposes a `/health` endpoint for uptime checks and reads all configuration from environment variables via `pydantic-settings`.
 
----
+## Architecture
 
-# 🧠 System Architecture
-
-```text
-Client
-   ↓
-FastAPI (API Layer)
-   ↓
-PostgreSQL / SQLite
-   ↓
-Redis (Caching + Broker)
-   ↓
-Celery Worker (Async Processing)
+```mermaid
+flowchart LR
+    C[Client] --> API["FastAPI<br/>routers: users · products · cart · orders"]
+    API -->|rate limit + cache| R[("Redis")]
+    API --> DB[("PostgreSQL<br/>SQLAlchemy ORM")]
+    API -->|process_order.delay| R
+    R --> W["Celery worker"]
 ```
 
----
+## API
 
-# 🔄 Request Flow
+| Method | Endpoint | Auth | Description |
+|---|---|:-:|---|
+| `POST` | `/signup` | | Create an account |
+| `POST` | `/login` | | Get a JWT access token |
+| `GET` | `/products` | | List products (cached) |
+| `POST` | `/products` | | Create a product (invalidates the cache) |
+| `GET` | `/cart` | 🔒 | View your cart |
+| `POST` | `/cart` | 🔒 | Add an item to your cart |
+| `GET` | `/orders` | 🔒 | List your orders |
+| `POST` | `/orders` | 🔒 | Place an order from your cart |
+| `GET` | `/health` | | Liveness probe |
 
-## 1. Product Fetch Workflow
+Full request and response schemas are in the [Swagger UI](https://ecommerce-backend-spj8.onrender.com/docs).
 
-* Client requests `/products`
-* FastAPI checks Redis cache
-* On cache miss:
+## Getting started
 
-  * fetches data from database
-  * stores response in Redis
-  * returns optimized response
-
----
-
-## 2. Order Placement Workflow
-
-* User authenticates using JWT token
-* Items added to cart
-* Order created from cart items
-* Celery task can process background operations asynchronously
-
----
-
-# ⚡ Performance & Scalability Features
-
-* Redis caching reduces repeated database queries
-* Rate limiting protects APIs from abuse
-* Background task architecture improves responsiveness
-* Modular router-based architecture improves maintainability
-* Dockerized services ensure reproducible environments
-* CI pipeline automates validation during code pushes
-
----
-
-# 🚀 CI/CD Pipeline
-
-Implemented Continuous Integration using GitHub Actions.
-
-Pipeline automatically:
-
-* installs dependencies
-* validates Python syntax
-* builds Docker image
-* runs on every push to `main`
-
----
-
-# ☁️ Deployment
-
-The backend is deployed on Render using environment-based configuration variables.
-
-Deployment includes:
-
-* FastAPI API server
-* Swagger documentation
-* Cloud-hosted REST endpoints
-
----
-
-# 🛠️ Local Setup Instructions
-
-## 1. Clone Repository
+Docker Compose brings up the API, PostgreSQL, Redis and a Celery worker:
 
 ```bash
 git clone https://github.com/rohantiwari9573/ecommerce-backend.git
 cd ecommerce-backend
 ```
 
----
-
-## 2. Configure Environment Variables
-
-Create `.env` file:
+Create a `.env` file:
 
 ```env
-SECRET_KEY=mysecretkey
-DATABASE_URL=postgresql://postgres:admin123@db:5432/ecommerce
+SECRET_KEY=change-me
+POSTGRES_PASSWORD=change-me
+DATABASE_URL=postgresql+psycopg2://postgres:change-me@db:5432/ecommerce
 REDIS_URL=redis://redis:6379/0
 ```
 
----
-
-## 3. Run with Docker
-
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
----
+Then open http://localhost:8000/docs. The database and Redis are only reachable on the internal Compose network and are never published to the host.
 
-## 4. Access Swagger Docs
+## Project structure
 
 ```text
-http://localhost:8000/docs
+app/
+  main.py        app setup, request logging, router registration, /health
+  routers/       users, products, cart, orders
+  models/        SQLAlchemy models (user, product, cart, order, order_item)
+  schemas/       Pydantic request/response models
+  auth/          password hashing + JWT helpers
+  core/          settings, Redis client, rate limiter, Celery app, logger
+  tasks/         Celery tasks
 ```
 
----
+## Deployment and CI
 
-# 📌 Key Engineering Concepts Covered
+- **API:** Render web service (`render.yaml`).
+- **Database:** Neon PostgreSQL.
+- **Cache and rate limiting:** Render Key Value (Redis-compatible).
+- **Celery worker:** runs in the Docker Compose setup. On the free hosting tier, orders are still enqueued, but no worker consumes them.
+- **CI:** GitHub Actions installs dependencies, compiles every module and builds the Docker image on each push and pull request.
 
-* REST API Design
-* JWT Authentication
-* Database ORM Modeling
-* Redis Caching
-* Rate Limiting
-* Asynchronous Task Queues
-* Docker Containerization
-* Multi-Service Architecture
-* CI/CD Pipelines
-* Cloud Deployment
+## Roadmap
 
----
+- [ ] pytest suite for auth, cart and order flows
+- [ ] Real fulfilment logic in `process_order` (invoice generation, email)
+- [ ] Admin role for product management
+- [ ] Alembic migrations in place of `create_all`
 
-# 👨‍💻 Author
+## Author
 
-Rohan Tiwari
-
-GitHub:
-https://github.com/rohantiwari9573
-
-LinkedIn:
-https://www.linkedin.com/in/rohan-tiwari-012106283/
+**Rohan Tiwari** · [GitHub](https://github.com/rohantiwari9573) · [LinkedIn](https://www.linkedin.com/in/rohan-tiwari-012106283/)

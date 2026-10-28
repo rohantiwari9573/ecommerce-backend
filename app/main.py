@@ -17,7 +17,11 @@ from app.routers import user, product, cart, order
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app = FastAPI(
+    title="E-Commerce Backend API",
+    description="Products, carts and orders with JWT auth, Redis caching and rate limiting, and Celery background jobs.",
+    version="1.0.0",
+)
 
 
 @app.middleware("http")
