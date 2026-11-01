@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.product import Product
 from app.schemas.product import ProductCreate
 from app.dependencies import get_db
+from app.auth.utils import get_current_user
 from app.core.redis import redis_client
 from app.core.logger import logger
 
@@ -16,7 +17,11 @@ CACHE_TTL_SECONDS = 60
 
 
 @router.post("/products")
-def create_product(product: ProductCreate, db: Session = Depends(get_db)):
+def create_product(
+    product: ProductCreate,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user)
+):
     new_product = Product(
         name=product.name,
         price=product.price

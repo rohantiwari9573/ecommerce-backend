@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, Depends
 
 from app.database import engine, Base
+from app.seed import seed_demo_products
 from app.core.rate_limiter import rate_limiter
 from app.core.logger import logger
 
@@ -16,6 +17,7 @@ from app.routers import user, product, cart, order
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+seed_demo_products()
 
 app = FastAPI(
     title="E-Commerce Backend API",

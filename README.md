@@ -23,7 +23,7 @@
 ## Features
 
 - **JWT authentication.** Signup and login issue bearer tokens that expire after 60 minutes. Passwords are hashed with bcrypt and must be at least 8 characters.
-- **Product catalog.** `GET /products` is served from a Redis cache with a 60-second TTL, and the cache is invalidated as soon as a product is created, so reads never go stale.
+- **Product catalog.** A starter catalog is seeded on first boot. `GET /products` is served from a Redis cache with a 60-second TTL, and the cache is invalidated as soon as a product is created, so reads never go stale.
 - **Rate limiting.** A per-IP fixed window (10 requests per 60 seconds) is stored in Redis and returns `429` when exceeded. It fails open if Redis is unreachable, so a cache outage never takes the API down.
 - **Carts and orders.** Users manage their own cart, and checking out turns cart items into an order with line items.
 - **Background jobs.** Placing an order enqueues a `process_order` Celery task, using Redis as the broker. The task body is currently a placeholder for fulfilment work such as invoicing or notifications.
@@ -47,7 +47,7 @@ flowchart LR
 | `POST` | `/signup` | | Create an account |
 | `POST` | `/login` | | Get a JWT access token |
 | `GET` | `/products` | | List products (cached) |
-| `POST` | `/products` | | Create a product (invalidates the cache) |
+| `POST` | `/products` | 🔒 | Create a product (validated; invalidates the cache) |
 | `GET` | `/cart` | 🔒 | View your cart |
 | `POST` | `/cart` | 🔒 | Add an item to your cart |
 | `GET` | `/orders` | 🔒 | List your orders |
@@ -105,7 +105,7 @@ app/
 
 - [ ] pytest suite for auth, cart and order flows
 - [ ] Real fulfilment logic in `process_order` (invoice generation, email)
-- [ ] Admin role for product management
+- [ ] Admin role for product management (creation currently requires any logged-in user)
 - [ ] Alembic migrations in place of `create_all`
 
 ## Author
