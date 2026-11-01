@@ -52,3 +52,11 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+
+
+# TEMPORARY: reveals how the hosting proxy forwards client IPs. Removed in
+# the follow-up commit once the rate limiter is fixed.
+@app.get("/_debug/client-ip", include_in_schema=False)
+def debug_client_ip(request: Request):
+    keys = ("x-forwarded-for", "x-real-ip", "true-client-ip", "cf-connecting-ip", "forwarded", "x-forwarded-proto", "via", "cf-ray", "rndr-id")
+    return {"client_host": request.client.host if request.client else None, **{k: request.headers.get(k) for k in keys}}
